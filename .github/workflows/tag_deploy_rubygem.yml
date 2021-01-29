@@ -1,9 +1,9 @@
-# Build & Deploy Puppet module & GitHub release when a SemVer tag is pushed
+# Build & Deploy RubyGem & GitHub release when a SemVer tag is pushed
 # ------------------------------------------------------------------------------
 #
 #             NOTICE: **This file is maintained with puppetsync**
 #
-# This file is updated automatically as part of a puppet module baseline.
+# This file is updated automatically as part of an asset baseline.
 #
 # The next baseline sync will overwrite any local changes to this file!
 #
@@ -13,7 +13,7 @@
 #
 #   GitHub Secret variable    Type      Notes
 #   ------------------------  --------  ----------------------------------------
-#   PUPPETFORGE_API_TOKEN     Required
+#   RUBYGEMS_API_KEY          Required
 #
 # ------------------------------------------------------------------------------
 #
@@ -22,7 +22,7 @@
 # * The CHANGLOG text is altered to remove RPM-style date headers, which don't
 #   render well as markdown on the GitHub release pages
 ---
-name: 'Tag: Release to GitHub & Puppet Forge'
+name: 'Tag: Release to GitHub & rubygems.org'
 
 on:
   push:
@@ -31,11 +31,15 @@ on:
 
 env:
   PUPPET_VERSION: '~> 6'
+  LOCAL_WORKFLOW_CONFIG_FILE: .github/workflows.local.json
 
 jobs:
   releng-checks:
     name: "RELENG checks"
     runs-on: ubuntu-18.04
+    outputs:
+      build_command: ${{ steps.commands.outputs.build_command }}
+      release_command: ${{ steps.commands.outputs.release_command }}
     steps:
       - name: "Assert '${{ github.ref }}' is a tag"
         run: '[[ "$GITHUB_REF" =~ ^refs/tags/ ]] || { echo "::error ::GITHUB_REF is not a tag: ${GITHUB_REF}"; exit 1 ; }'
@@ -43,14 +47,34 @@ jobs:
         with:
           ref: ${{ github.ref }}
           clean: true
+      - name: Determing build and release commands
+        id: commands
+        run: |
+          # By default, these are the standard tasks from "bundler/gem_tasks"
+          # To override them in the LOCAL_WORKFLOW_CONFIG_FILE
+          GEM_BUILD_COMMAND='bundle exec rake build'
+          GEM_RELEASE_COMMAND='gem push pkg/*.gem'
+          if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
+              grep -w '"gem_build_command"' &> /dev/null; then
+            GEM_BUILD_COMMAND="$(jq .gem_build_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+          fi
+          if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
+              grep -w '"gem_release_command"' &> /dev/null; then
+            GEM_RELEASE_COMMAND="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+          fi
+          echo "::set-output name=build_command::${GEM_BUILD_COMMAND}"
+          echo "::set-output name=release_command::${GEM_RELEASE_COMMAND}"
+          echo "+set-output name=build_command::${GEM_BUILD_COMMAND}"
+          echo "+set-output name=release_command::${GEM_RELEASE_COMMAND}"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.5
           bundler-cache: true
-      - run: bundle exec gem build
+      - name: Test build the package
+        run: "${{ steps.commands.outputs.build_command }}"
 
   create-github-release:
-    if: never()
+    if: false
     name: Deploy GitHub Release
     needs: [ releng-checks ]
     runs-on: ubuntu-18.04
@@ -93,17 +117,14 @@ jobs:
           draft: false
           prerelease: false
 
-  deploy-to-puppet-forge:
-    name: Deploy PuppetForge Release
+  deploy-rubygem:
+    name: Deploy RubyGem Release
     needs: [ releng-checks ]
     runs-on: ubuntu-18.04
     env:
       RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-      # By default, these are the standard tasks from "bundler/gem_tasks"
-      # To override them
-      BUILD_COMMAND: 'bundle exec rake build'
-      PUBLISH_COMMAND: 'bundle exec rake release'
-      LOCAL_WORKFLOW_CONFIG_FILE: .github/workflows.local.json
+      BUILD_COMMAND: ${{ needs.releng-checks.outputs.build_command }}
+      RELEASE_COMMAND: ${{ needs.releng-checks.outputs.release_command }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -115,20 +136,10 @@ jobs:
           ruby-version: 2.5
           bundler-cache: true
       - name: Build RubyGem
-        run: |
-          if [ -f "$LOCAL_WORKFLOW_CONFIG_FILE" ] && \\
-            jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" | grep -w '"gem_build_command'; then
-            BUILD_COMMAND="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
-          fi
-          exec "$BUILD_COMMAND"
+        run: '$BUILD_COMMAND'
 
-      - name: Deploy to Puppet Forge
+      - name: Release RubyGem
         run: |
-          if [ -f "$LOCAL_WORKFLOW_CONFIG_FILE" ] && \\
-            jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" | grep -w '"gem_build_command'; then
-            RELEASE_COMMAND="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
-          fi
-
           echo "Setting up gem credentials..."
           mkdir -p ~/.gem
 
@@ -140,5 +151,5 @@ jobs:
 
           chmod -R go=u-w .
 
-          echo "Running gem release..."
-          echo exec "$RELEASE_COMMAND"
+          echo "Running '$RELEASE_COMMAND'..."
+          $RELEASE_COMMAND
