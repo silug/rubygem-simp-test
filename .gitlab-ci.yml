@@ -20,6 +20,7 @@ rubocop:
     - docker
   script:
     - bundle exec rubocop
+  allow_failure: true
 
 rspec:
   tags:
