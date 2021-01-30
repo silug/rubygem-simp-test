@@ -1,4 +1,6 @@
-require "simp/test/version"
+# frozen_string_literal: true
+
+require 'simp/test/version'
 
 module Simp
   module Test
