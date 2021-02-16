@@ -74,15 +74,15 @@ jobs:
           GEM_PKG_DIR='pkg'
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_pkg_dir"' &> /dev/null; then
-            GEM_PKG_DIR="$(jq .gem_pkg_dir "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+            GEM_PKG_DIR="$(jq -r .gem_pkg_dir "$LOCAL_WORKFLOW_CONFIG_FILE" )"
           fi
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_build_command"' &> /dev/null; then
-            GEM_BUILD_COMMAND="$(jq .gem_build_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+            GEM_BUILD_COMMAND="$(jq -r .gem_build_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
           fi
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_release_command"' &> /dev/null; then
-            GEM_RELEASE_COMMAND="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+            GEM_RELEASE_COMMAND="$(jq -r .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
           fi
           echo "::set-output name=build_command::${GEM_BUILD_COMMAND}"
           echo "::set-output name=pkg_dir::${GEM_PKG_DIR}"
@@ -97,6 +97,7 @@ jobs:
         run: |
           bundle exec rake -T
           echo "$GEM_BUILD_COMMAND" | od  -t a -t x1 -t d1
+          $GEM_BUILD_COMMAND
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
