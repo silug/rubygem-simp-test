@@ -38,24 +38,6 @@ jobs:
           bundle show
           bundle exec rake rubocop
 
-#  releng-checks:
-#    name: 'RELENG checks'
-#    runs-on: ubuntu-18.04
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: 'Install Ruby ${{matrix.puppet.ruby_version}}'
-#        uses: ruby/setup-ruby@v1
-#        with:
-#          ruby-version: 2.5
-#          bundler-cache: true
-#      - name: 'Tags and changelogs'
-#        run: |
-#          bundle exec rake pkg:check_version
-#          bundle exec rake pkg:compare_latest_tag
-#          bundle exec rake pkg:create_tag_changelog
-#      - name: 'Test-build the Puppet module'
-#        run: 'bundle exec pdk build --force'
-
   spec-tests:
     name: 'Spec tests'
     runs-on: ubuntu-18.04

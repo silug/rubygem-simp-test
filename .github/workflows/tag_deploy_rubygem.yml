@@ -3,7 +3,7 @@
 #
 #             NOTICE: **This file is maintained with puppetsync**
 #
-# This file is updated automatically as part of an asset baseline.
+# This file is updated automatically as part of a standardized asset baseline.
 #
 # The next baseline sync will overwrite any local changes to this file!
 #
@@ -34,6 +34,15 @@ env:
   LOCAL_WORKFLOW_CONFIG_FILE: .github/workflows.local.json
 
 jobs:
+  dump_contexts:
+    name: 'Examine Context contents'
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Dump contexts
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
   releng-checks:
     name: "RELENG checks"
     runs-on: ubuntu-18.04
