@@ -105,7 +105,7 @@ jobs:
              { echo "::error ::No directory found at ${{ steps.commands.outputs.pkg_dir }}/" ; exit 3 ; }
           ls -1 "${{ steps.commands.outputs.pkg_dir }}"/*.gem || \
              {  echo "::error ::No gem file found at ${{ steps.commands.outputs.pkg_dir }}/*.gem" ; exit 2 ; }
-          ls -1 "${{ steps.commands.outputs.pkg_dir }}"/*-${tag}.gem || \
+          [ -f "${{ steps.commands.outputs.pkg_dir }}"/*-${tag}.gem ] || \
              { echo "::error ::tag '${tag}' does not match package $(ls -1 ${{ steps.commands.outputs.pkg_dir }}/*.gem)"; exit 1 ; }
 
   create-github-release:
