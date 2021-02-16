@@ -97,7 +97,7 @@ jobs:
         run: |
           command -v bundle || echo "NO bundle COMMAND FOUND WITH command -v"
           bundle exec rake -T
-          $GEM_BUILD_COMMAND
+          exec "$GEM_BUILD_COMMAND"
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
