@@ -30,10 +30,11 @@
 #
 #         {
 #           "gem_build_command": "bundle exec rake build",
-#           "gem_release_command": "bundle exec rake release"
+#           "gem_release_command": "bundle exec rake release",
+#           "gem_pkg_dir": "pkg"
 #         }
 #
-#   Both keys are optional.
+#   All keys are optional.
 #
 ---
 name: 'Tag: Release to GitHub & rubygems.org'
@@ -55,6 +56,7 @@ jobs:
     outputs:
       build_command: ${{ steps.commands.outputs.build_command }}
       release_command: ${{ steps.commands.outputs.release_command }}
+      pkg_dir: ${{ steps.commands.outputs.pkg_dir }}
     steps:
       - name: "Assert '${{ github.ref }}' is a tag"
         run: '[[ "$GITHUB_REF" =~ ^refs/tags/ ]] || { echo "::error ::GITHUB_REF is not a tag: ${GITHUB_REF}"; exit 1 ; }'
@@ -80,9 +82,10 @@ jobs:
           fi
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_pkg_dir"' &> /dev/null; then
-            GEM_PACKAGE_DIR="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+            GEM_PKG_DIR="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
           fi
           echo "::set-output name=build_command::${GEM_BUILD_COMMAND}"
+          echo "::set-output name=pkg_dir::${GEM_PKG_DIR}"
           echo "::set-output name=release_command::${GEM_RELEASE_COMMAND}"
       - uses: ruby/setup-ruby@v1
         with:
@@ -93,7 +96,7 @@ jobs:
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
-          [ -f pkg/*-${tag}.gem ] || { echo "::error ::tag '${tag}' does not match package $(ls -1 pkg/*.gem)"; exit 1 ; }
+          [ -f ${{ steps.commands.outputs.pkg_dir }}/*-${tag}.gem ] || { echo "::error ::tag '${tag}' does not match package $(ls -1 ${{ steps.commands.outputs.pkg_dir }}/*.gem)"; exit 1 ; }
 
   create-github-release:
     name: Deploy GitHub Release
@@ -160,6 +163,7 @@ jobs:
           bundler-cache: true
       - name: Build RubyGem
         run: |
+          echo "Setting up file permissions..."
           chmod -R go=u-w .
 
           echo "Running '$BUILD_COMMAND'..."
