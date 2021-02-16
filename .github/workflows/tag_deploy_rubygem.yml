@@ -98,9 +98,6 @@ jobs:
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
-          ls -lart
-          ls -lart  ${{ steps.commands.outputs.pkg_dir }}
-          ls -lart  ${{ steps.commands.outputs.pkg_dir }}/*.gem
           [ -d  "${{ steps.commands.outputs.pkg_dir }}" ] || \
              { echo "::error ::No directory found at ${{ steps.commands.outputs.pkg_dir }}/" ; exit 3 ; }
           ls -1 "${{ steps.commands.outputs.pkg_dir }}"/*.gem || \
