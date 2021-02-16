@@ -96,7 +96,7 @@ jobs:
           GEM_BUILD_COMMAND: ${{ steps.commands.outputs.build_command }}
         run: |
           bundle exec rake -T
-          echo "$GEM_BUILD_COMMAND" | od
+          echo "$GEM_BUILD_COMMAND" | od -ha
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
