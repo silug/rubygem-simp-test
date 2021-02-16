@@ -103,7 +103,7 @@ jobs:
           ls -lart  ${{ steps.commands.outputs.pkg_dir }}/*.gem
           [ -d  "${{ steps.commands.outputs.pkg_dir }}" ] || \
              { echo "::error ::No directory found at ${{ steps.commands.outputs.pkg_dir }}/" ; exit 3 ; }
-          [ -f "${{ steps.commands.outputs.pkg_dir }}"/*.gem }} ] || \
+          ls -lart "${{ steps.commands.outputs.pkg_dir }}"/*.gem }} || \
              {  echo "::error ::No gem file found at ${{ steps.commands.outputs.pkg_dir }}/*.gem" ; exit 2 ; }
           [ -f ${{ steps.commands.outputs.pkg_dir }}/*-${tag}.gem ] || \
              { echo "::error ::tag '${tag}' does not match package $(ls -1 ${{ steps.commands.outputs.pkg_dir }}/*.gem)"; exit 1 ; }
