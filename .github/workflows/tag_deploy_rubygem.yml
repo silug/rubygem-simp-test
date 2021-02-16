@@ -94,16 +94,16 @@ jobs:
       - name: Test build the package
         env:
           GEM_BUILD_COMMAND: ${{ steps.commands.outputs.build_command }}
-        run: |
-          bundle exec rake -T
-          echo "$GEM_BUILD_COMMAND" | od  -t a -t x1 -t d1
-          $GEM_BUILD_COMMAND
+        run: "$GEM_BUILD_COMMAND"
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
-          [ -d  ${{ steps.commands.outputs.pkg_dir }} ] || { echo "::error ::No directory found at ${{ steps.commands.outputs.pkg_dir }}/" ; exit 3 }
-          [ -f ${{ steps.commands.outputs.pkg_dir }}/*.gem }} ] || {  echo "::error ::No gem file found at ${{ steps.commands.outputs.pkg_dir }}/*.gem" ; exit 2 }
-          [ -f ${{ steps.commands.outputs.pkg_dir }}/*-${tag}.gem ] || { echo "::error ::tag '${tag}' does not match package $(ls -1 ${{ steps.commands.outputs.pkg_dir }}/*.gem)"; exit 1 ; }
+          [ -d  ${{ steps.commands.outputs.pkg_dir }} ] || \
+             { echo "::error ::No directory found at ${{ steps.commands.outputs.pkg_dir }}/" ; exit 3 ; }
+          [ -f ${{ steps.commands.outputs.pkg_dir }}/*.gem }} ] || \
+             {  echo "::error ::No gem file found at ${{ steps.commands.outputs.pkg_dir }}/*.gem" ; exit 2 ; }
+          [ -f ${{ steps.commands.outputs.pkg_dir }}/*-${tag}.gem ] || \
+             { echo "::error ::tag '${tag}' does not match package $(ls -1 ${{ steps.commands.outputs.pkg_dir }}/*.gem)"; exit 1 ; }
 
   create-github-release:
     name: Deploy GitHub Release
