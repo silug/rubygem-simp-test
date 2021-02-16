@@ -36,22 +36,9 @@ env:
   LOCAL_WORKFLOW_CONFIG_FILE: .github/workflows.local.json
 
 jobs:
-  dump_contexts:
-    name: 'Examine Context contents'
-    if: github.repository_owner == 'simp'
-    runs-on: ubuntu-16.04
-    steps:
-      - name: Dump contexts
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump env vars
-        run: env | sort
-
-
   releng-checks:
     name: "RELENG checks"
-    ##if: github.repository_owner == 'simp'
+    if: github.repository_owner == 'simp'
     runs-on: ubuntu-18.04
     outputs:
       build_command: ${{ steps.commands.outputs.build_command }}
