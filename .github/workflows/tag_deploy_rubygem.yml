@@ -30,7 +30,7 @@
 #
 #         {
 #           "gem_build_command": "bundle exec rake build",
-#           "gem_release_command": "bundle exec rake release",
+#           "gem_release_command": "bundle exec rake build release:rubygem_push",
 #           "gem_pkg_dir": "pkg"
 #         }
 #
@@ -70,8 +70,12 @@ jobs:
           # By default, these are the standard tasks from "bundler/gem_tasks"
           # To override them in the LOCAL_WORKFLOW_CONFIG_FILE
           GEM_BUILD_COMMAND='bundle exec rake build'
+          GEM_RELEASE_COMMAND='bundle exec rake build release:rubygem_push'
           GEM_PKG_DIR='pkg'
-          GEM_RELEASE_COMMAND='gem push ${GEM_PKG_DIR}/*.gem'
+          if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
+              grep -w '"gem_pkg_dir"' &> /dev/null; then
+            GEM_PKG_DIR="$(jq .gem_pkg_dir "$LOCAL_WORKFLOW_CONFIG_FILE" )"
+          fi
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_build_command"' &> /dev/null; then
             GEM_BUILD_COMMAND="$(jq .gem_build_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
@@ -79,10 +83,6 @@ jobs:
           if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
               grep -w '"gem_release_command"' &> /dev/null; then
             GEM_RELEASE_COMMAND="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
-          fi
-          if jq -r '. | keys' "$LOCAL_WORKFLOW_CONFIG_FILE" 2>/dev/null | \
-              grep -w '"gem_pkg_dir"' &> /dev/null; then
-            GEM_PKG_DIR="$(jq .gem_release_command "$LOCAL_WORKFLOW_CONFIG_FILE" )"
           fi
           echo "::set-output name=build_command::${GEM_BUILD_COMMAND}"
           echo "::set-output name=pkg_dir::${GEM_PKG_DIR}"
