@@ -26,7 +26,7 @@
 #
 # * By default, the gem is built and released using the standard rake tasks
 #   from "bundler/gem_tasks".  To override these, create a JSON file at
-#   `.github/workflows.local.json`, using the format:
+#   `.github/workflows.local.json`, using the following format:
 #
 #         {
 #           "gem_build_command": "bundle exec rake build",
@@ -158,6 +158,7 @@ jobs:
       RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
       BUILD_COMMAND: ${{ needs.releng-checks.outputs.build_command }}
       RELEASE_COMMAND: ${{ needs.releng-checks.outputs.release_command }}
+      PKG_DIR: ${{ needs.releng-checks.outputs.pkg_dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
