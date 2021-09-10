@@ -1,10 +1,42 @@
-# frozen_string_literal: true
+gem_sources = ENV.fetch('GEM_SERVERS','https://rubygems.org').split(/[, ]+/)
 
-source 'https://rubygems.org'
+gem_sources.each { |gem_source| source gem_source }
 
-# Specify your gem's dependencies in simp-test.gemspec
+# read dependencies in from the gemspec
 gemspec
 
-gem 'rake', '~> 12.0'
-gem 'rspec', '~> 3.0'
-gem 'rubocop'
+# mandatory gems
+gem 'bundler'
+gem 'facter'
+gem 'puppet', ENV.fetch('PUPPET_VERSION',  '~>6')
+gem 'rake', '>= 12.3.3'
+gem 'simp-rake-helpers', ENV.fetch('SIMP_RAKE_HELPERS_VERSION', ['>= 5.6', '< 6.0'])
+
+gem 'r10k', ENV.fetch('R10k_VERSION',  '~>3')
+
+group :testing do
+  # to parse YUM repo files in `simp config` test
+  gem 'inifile'
+
+  # bootstrap common environment variables
+  gem 'dotenv'
+
+  # Ruby code coverage
+  gem 'simplecov'
+
+  # Testing framework
+  gem 'rspec'
+  gem 'rspec-its'
+end
+
+# nice-to-have gems (for debugging)
+group :development do
+  # enhanced REPL + debugging environment
+  gem 'pry'
+  gem 'pry-byebug'
+  gem 'pry-doc'
+
+  gem 'rubocop'
+  gem 'rubocop-performance'
+  gem 'rubocop-rspec'
+end

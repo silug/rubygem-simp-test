@@ -44,8 +44,7 @@ end
 
 %global gemdir /usr/share/simp/ruby
 %global geminstdir %{gemdir}/gems/%{gemname}-%{version}
-%global cli_version 7.0.0
-%global highline_version 2.0.3
+%global cli_version 0.4.0
 
 # gem2ruby's method of installing gems into mocked build roots will blow up
 # unless this line is present:
@@ -60,32 +59,6 @@ License: Apache-2.0
 URL: https://github.com/simp/rubygem-simp-test
 Source0: %{name}-%{cli_version}-%{release}.tar.gz
 Source1: %{gemname}-%{cli_version}.gem
-Requires: cracklib
-Requires: createrepo
-Requires: curl
-Requires: diffutils
-Requires: elinks
-Requires: facter >= 3
-Requires: git
-Requires: grep
-Requires: grub2-tools-minimal
-Requires: hostname
-Requires: iproute
-Requires: libpwquality
-Requires: net-tools
-Requires: policycoreutils
-Requires: procps-ng
-Requires: pupmod-herculesteam-augeasproviders_grub >= 3.0.1
-Requires: pupmod-simp-network >= 6.0.3
-Requires: pupmod-simp-resolv >= 0.1.1
-Requires: pupmod-simp-simplib >= 3.11.1
-Requires: puppet >= 6
-Requires: rsync
-Requires: rubygem(%{gemname}-highline) >= %{highline_version}
-Requires: sed
-Requires: simp-adapter >= 1.0.1
-Requires: simp-environment-skeleton >= 7.1.1
-Requires: yum-utils
 
 BuildRequires: ruby(rubygems)
 BuildRequires: ruby
@@ -104,21 +77,6 @@ BuildArch: noarch
 %description doc
 Documentation for %{name}
 
-%package highline
-Summary: A highline Gem for use with the SIMP CLI
-Version: %{highline_version}
-Release: %{lua: print(package_release)}
-License: GPL-2.0
-URL: https://github.com/JEG2/highline
-Source11: highline-%{highline_version}.gem
-BuildRequires: ruby(rubygems)
-BuildRequires: ruby
-BuildArch: noarch
-Provides: rubygem(%{gemname}-highline) = %{highline_version}
-
-%description highline
-simp-test-highline is required for the proper functionality of simp-test
-
 %prep
 %setup -q
 
@@ -131,41 +89,22 @@ echo "======= %setup gemdir: %{gemdir}"
 mkdir -p %{buildroot}/%{gemdir}
 mkdir -p %{buildroot}/%{_bindir} # NOTE: this is needed for el7
 gem install --local --install-dir %{buildroot}/%{gemdir} --force %{SOURCE1}
-
-cd ext/gems/highline
-if [ `which bundle 2>/dev/null` ]; then
-  bundle install
-fi
-gem install --local --install-dir %{buildroot}/%{gemdir} --force %{SOURCE11}
-cd -
-
-cat <<EOM > %{buildroot}%{_bindir}/simp
 #!/bin/bash
 
 PATH=/opt/puppetlabs/bin:/opt/puppetlabs/puppet/bin:\$PATH
-
-%{geminstdir}/bin/simp \$@
 
 EOM
 
 %files
 %defattr(0644, root, root, 0755)
 %{geminstdir}
-%attr(0755,-,-) %{geminstdir}/bin/simp
-%attr(0755,-,-) %{_bindir}/simp
 %exclude %{gemdir}/cache/%{gemname}-%{cli_version}.gem
 %{gemdir}/specifications/%{gemname}-%{cli_version}.gemspec
-
-%files highline
-%defattr(0644, root, root, 0755)
-%{gemdir}/gems/highline-%{highline_version}
-%exclude %{gemdir}/cache/highline-%{highline_version}.gem
-%{gemdir}/specifications/highline-%{highline_version}.gemspec
 
 %files doc
 %doc %{gemdir}/doc
 
 %changelog
-* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 7.0.0
+* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 0.4.0
 - New test: model on simp-cli to test RPM build
 

@@ -1,15 +1,24 @@
+$: << File.expand_path( '../lib/', __FILE__ )
 require 'rake/clean'
 require 'fileutils'
 require 'find'
 require 'rspec/core/rake_task'
+require 'rubygems'
+require 'simp/rake'
+require 'simp/rake/ci'
+require 'simp/test/version'
+
+# Create pkg:* and simp:ci_* Rake tasks
+Simp::Rake::Pkg.new(File.dirname(__FILE__))
+Simp::Rake::Ci.new(File.dirname(__FILE__))
 
 @package='simp-test'
 @rakefile_dir=File.dirname(__FILE__)
 
 CLEAN.include "#{@package}-*.gem"
-CLEAN.include 'pkg'
+CLEAN.include 'coverage'
 CLEAN.include 'dist'
-CLEAN.include '.vendor'
+CLEAN.include 'pkg'
 Find.find( @rakefile_dir ) do |path|
   if File.directory? path
     CLEAN.include path if File.basename(path) == 'tmp'
@@ -40,15 +49,8 @@ end
 desc "Run spec tests"
 RSpec::Core::RakeTask.new(:spec) do |t|
   t.rspec_opts = ['--color']
-  t.pattern = 'spec/lib/**/*_spec.rb'
-end
-
-desc %q{run all RSpec tests (alias of 'spec')}
-task :test => :spec
-
-desc "Run acceptance tests"
-RSpec::Core::RakeTask.new(:acceptance) do |t|
-  t.pattern = 'spec/acceptance'
+  t.exclude_pattern = '**/{acceptance,fixtures,files}/**/*_spec.rb'
+  t.pattern = 'spec/{lib,bin}/**/*_spec.rb'
 end
 
 namespace :pkg do
@@ -67,13 +69,34 @@ namespace :pkg do
 
   desc "build rubygem package for #{@package}"
   task :gem => :chmod do
-    Dir.chdir @rakefile_dir
-    Dir['*.gemspec'].each do |spec_file|
-      rpm_build = ENV.fetch('SIMP_RPM_BUILD', '1')
-      cmd = %Q{SIMP_RPM_BUILD=#{rpm_build} bundle exec gem build "#{spec_file}"}
-      sh cmd
-      FileUtils.mkdir_p 'dist'
-      FileUtils.mv Dir.glob("#{@package}*.gem"), 'dist/'
+    gem_dirs = [@rakefile_dir]
+    gem_dirs += Dir.glob('ext/gems/*')
+
+    gem_dirs.each do |gem_dir|
+      Dir.chdir gem_dir do
+        Dir['*.gemspec'].each do |spec_file|
+          # highline optional (development-related) gems require cmake, so
+          # exclude them in the bundle
+          opts = (File.basename(gem_dir) == 'highline') ? '--without=code_quality' : ''
+          cmd = %Q{SIMP_RPM_BUILD=1 bundle exec gem build "#{spec_file}" &> /dev/null}
+          if ::Bundler.respond_to?(:with_unbundled_env)
+            # Use Bundler 2.x API
+            ::Bundler.with_unbundled_env do
+              %x{bundle install #{opts}}
+              sh cmd
+            end
+          else
+            # Use deprecated Bundler 1.x API
+            ::Bundler.with_clean_env do
+              %x{bundle install #{opts}}
+              sh cmd
+            end
+          end
+
+          FileUtils.mkdir_p 'dist'
+          FileUtils.mv Dir.glob('*.gem'), File.join(@rakefile_dir, 'dist')
+        end
+      end
     end
   end
 
@@ -86,60 +109,24 @@ namespace :pkg do
     end
   end
 
-
-  desc "generate RPM for #{@package}"
-    require 'tmpdir'
-    task :rpm, [:mock_root] => [:clean, :gem] do |t, args|
-      mock_root  = args[:mock_root]
-      # TODO : Get rid of this terrible code.  Shoe-horned in until
-      # we have a better idea for auto-decet
-      if mock_root =~ /^epel-6/ then el_version = '6'
-      elsif mock_root =~ /^epel-7/ then el_version = '7'
-      else puts 'WARNING: Did not detect epel version'
-      end
-      tmp_dir = ''
-
-      if tmp_dir = ENV.fetch( 'SIMP_MOCK_SIMPGEM_ASSETS_DIR', false )
-         FileUtils.mkdir_p tmp_dir
-      else
-         tmp_dir = Dir.mktmpdir( "build_#{@package}" )
-      end
-
-      begin
-        Dir.chdir tmp_dir
-        specfile     = "#{@rakefile_dir}/build/rubygem-#{@package}.el#{el_version}.spec"
-        tmp_specfile = "#{tmp_dir}/rubygem-#{@package}.el#{el_version}.spec"
-
-        # We have to copy to a local directory because mock bugs out in NFS
-        # home directories (where SIMP devs often work)
-        FileUtils.cp specfile, tmp_specfile, :preserve => true
-        Dir.glob("#{@rakefile_dir}/dist/#{@package}*.gem") do |pkg|
-          FileUtils.cp pkg, tmp_dir, :preserve => true
-        end
-
-        # Build SRPM from specfile
-        sh %Q{mock -r #{mock_root} --buildsrpm --source="#{tmp_dir}" --spec="#{tmp_specfile}" --resultdir="#{tmp_dir}"}
-
-        # Build RPM from SRPM
-        Dir.glob("#{tmp_dir}/rubygem-#{@package}-*.el#{el_version}*.src.rpm") do |pkg|
-          sh %Q{mock -r #{mock_root} --rebuild "#{pkg}" --resultdir=#{tmp_dir} --no-cleanup-after}
-        end
-
-        sh %Q{ls -l "#{tmp_dir}"}
-
-        # copy RPM back into pkg/
-        Dir.glob("#{tmp_dir}/rubygem-#{@package}-*.el#{el_version}*.rpm") do |pkg|
-          sh %Q{cp "#{pkg}" "#{@rakefile_dir}/dist/"}
-          FileUtils.cp pkg, "#{@rakefile_dir}/dist/"
-        end
-      ensure
-        Dir.chdir @rakefile_dir
-        # cleanup if needed
-        if ! ENV.fetch( 'SIMP_MOCK_SIMPGEM_ASSETS_DIR', false )
-           FileUtils.remove_entry_secure tmp_dir
-        end
-      end
+  desc 'ensure simp cli Ruby version matches its RPM spec file version'
+  task :validate_ruby_version do
+    basedir = File.dirname(__FILE__)
+    info, changelogs = Simp::RelChecks::load_and_validate_changelog(basedir, false)
+    spec_file_version = Gem::Version.new(info.version)
+    ruby_version = Gem::Version.new(Simp::Cli::VERSION)
+    if spec_file_version != ruby_version
+      fail("ERROR: Version mismatch: " +
+        " spec file version = #{spec_file_version}," +
+        " version.rb version = #{ruby_version}")
+    end
   end
+
+  Rake::Task[:rpm].prerequisites.unshift(:gem)
+
+  Rake::Task[:compare_latest_tag].enhance [:validate_ruby_version]
 end
 
+# Make sure gem packages are built because they will be installed in
+# the acceptance test
 # vim: syntax=ruby
