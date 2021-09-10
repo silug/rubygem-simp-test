@@ -3,6 +3,14 @@
 # * Cancels all GLCI pipelines associated with the PR HEAD ref (branch)
 # * Removes the PR HEAD branch from the corresponding gitlab.com/org/ project
 #
+# ------------------------------------------------------------------------------
+#
+#             NOTICE: **This file is maintained with puppetsync**
+#
+# This file is updated automatically as part of a standardized asset baseline.
+#
+# The next baseline sync will overwrite any local changes to this file!
+#
 # ==============================================================================
 #
 # GitHub Action Secrets variables available for this pipeline:
@@ -85,7 +93,7 @@ jobs:
 ###  examine_contexts:
 ###    name: 'Examine Context contents'
 ###    if: always()
-###    runs-on: ubuntu-16.04
+###    runs-on: ubuntu-latest
 ###    steps:
 ###      - name: Dump contexts
 ###        env:
