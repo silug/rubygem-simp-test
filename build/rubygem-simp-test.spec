@@ -44,7 +44,7 @@ end
 
 %global gemdir /usr/share/simp/ruby
 %global geminstdir %{gemdir}/gems/%{gemname}-%{version}
-%global cli_version 0.4.7
+%global cli_version 0.4.8
 
 # gem2ruby's method of installing gems into mocked build roots will blow up
 # unless this line is present:
@@ -89,6 +89,8 @@ echo "======= %setup gemdir: %{gemdir}"
 mkdir -p %{buildroot}/%{gemdir}
 mkdir -p %{buildroot}/%{_bindir} # NOTE: this is needed for el7
 gem install --local --install-dir %{buildroot}/%{gemdir} --force %{SOURCE1}
+
+cat <<EOM > %{buildroot}%{_bindir}/simp
 #!/bin/bash
 
 PATH=/opt/puppetlabs/bin:/opt/puppetlabs/puppet/bin:\$PATH
@@ -105,6 +107,6 @@ EOM
 %doc %{gemdir}/doc
 
 %changelog
-* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 0.4.7
+* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 0.4.8
 - New test: model on simp-cli to test RPM build
 
