@@ -79,6 +79,7 @@ namespace :pkg do
           # exclude them in the bundle
           opts = (File.basename(gem_dir) == 'highline') ? '--without=code_quality' : ''
           cmd = %Q{SIMP_RPM_BUILD=1 bundle exec gem build "#{spec_file}" &> /dev/null}
+          require 'bundler'
           if ::Bundler.respond_to?(:with_unbundled_env)
             # Use Bundler 2.x API
             ::Bundler.with_unbundled_env do
