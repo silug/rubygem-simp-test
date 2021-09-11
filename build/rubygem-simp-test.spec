@@ -44,7 +44,7 @@ end
 
 %global gemdir /usr/share/simp/ruby
 %global geminstdir %{gemdir}/gems/%{gemname}-%{version}
-%global cli_version 0.4.11
+%global cli_version 0.4.1
 
 # gem2ruby's method of installing gems into mocked build roots will blow up
 # unless this line is present:
@@ -107,6 +107,6 @@ EOM
 %doc %{gemdir}/doc
 
 %changelog
-* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 0.4.11
+* Thu Jun 24 2021 Chris Tessmer <8979062+op-ct@users.noreply.github.com> - 0.4.1
 - New test: model on simp-cli to test RPM build
 
