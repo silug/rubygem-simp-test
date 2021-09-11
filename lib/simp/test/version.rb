@@ -2,6 +2,6 @@
 
 module Simp
   module Test
-    VERSION = '0.4.1'
+    VERSION = '0.4.13'
   end
 end

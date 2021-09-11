@@ -59,7 +59,8 @@ jobs:
           ruby-version: 2.5
           bundler-cache: true
       - name: Test build the package
-        run: "${{ steps.commands.outputs.build_command }}"
+        run: |
+          ${{ steps.commands.outputs.build_command }}
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
