@@ -61,7 +61,7 @@ jobs:
       - name: Test build the package
         env:
           GEM_BUILD_COMMAND: ${{ steps.commands.outputs.build_command }}
-        run: $GEM_BUILD_COMMAND
+        run: "$GEM_BUILD_COMMAND"
       - name: "Assert '${{ github.ref }}' matches the package version"
         run: |
           tag="${GITHUB_REF/refs\/tags\//}"
